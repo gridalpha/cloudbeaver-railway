@@ -14,6 +14,7 @@ import hashlib
 import http.cookiejar
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -163,15 +164,19 @@ def main():
     if not wait_for_server():
         log("server did not become ready, skipping")
         return
-    for attempt in range(1, 6):
+    for attempt in range(1, 9):
         try:
             seed()
             with open(MARKER, "w") as handle:
                 handle.write(CONN_NAME + "\n")
             return
         except Exception as error:  # noqa: BLE001 - never fail the container
-            log("attempt %d failed: %s" % (attempt, error))
-            time.sleep(10)
+            message = str(error)
+            log("attempt %d failed: %s" % (attempt, message[:300]))
+            # CloudBeaver's brute-force protection blocks a user for a stated
+            # number of seconds; sleeping less than that just burns an attempt.
+            blocked = re.search(r"login for this user for (\d+) seconds", message)
+            time.sleep(int(blocked.group(1)) + 10 if blocked else 30)
     log("giving up; add the connection from the Connections admin page")
 
 
