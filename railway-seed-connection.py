@@ -57,8 +57,17 @@ FORWARDED = {
     "X-Forwarded-Host": "localhost",
 }
 
+class LoopbackCookiePolicy(http.cookiejar.DefaultCookiePolicy):
+    """forceHttps makes CloudBeaver mark its session cookie Secure, and the
+    standard policy then refuses to send it back over our plain-HTTP loopback
+    call — every request would arrive as a fresh anonymous session."""
+
+    def return_ok_secure(self, cookie, request):
+        return True
+
+
 opener = urllib.request.build_opener(
-    urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
+    urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar(LoopbackCookiePolicy()))
 )
 
 
