@@ -46,7 +46,7 @@ def log(message):
 # call. Present ourselves the way Railway's edge presents a browser.
 FORWARDED = {
     "X-Forwarded-Proto": "https",
-    "X-Forwarded-Host": "127.0.0.1:%s" % PORT,
+    "X-Forwarded-Host": "localhost",
 }
 
 opener = urllib.request.build_opener(
@@ -110,7 +110,7 @@ def pick_project():
 def seed():
     gql("mutation { openSession { createTime } }")
     gql(
-        "mutation login($u: Object) { authLogin(provider: \"local\", credentials: $u) { authId } }",
+        "query login($u: Object) { authLogin(provider: \"local\", credentials: $u) { authId } }",
         {"u": {"user": ADMIN_USER, "password": ADMIN_PASSWORD}},
     )
     project_id = pick_project()
