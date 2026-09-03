@@ -16,6 +16,11 @@ rm -rf "${WORKSPACE}/lost+found" || true
 
 chown -R "${DBEAVER_UID:-8978}:${DBEAVER_GID:-8978}" "${WORKSPACE}"
 
+# The health prober talks straight to the container with no X-Forwarded-Proto,
+# which forceHttps would answer with a 302. Serve $PORT for the prober and let
+# the public domain target CloudBeaver's own port.
+/opt/cloudbeaver/railway-healthz.py &
+
 # Register the bundled database as a shared connection the first time this
 # workspace boots. Runs behind the server so the health check is never blocked;
 # it is a no-op on every later deploy.
