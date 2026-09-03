@@ -153,7 +153,9 @@ def seed():
         "configurationType": "MANUAL",
         "authModelId": "native",
         "saveCredentials": True,
-        "sharedCredentials": True,
+        # sharedCredentials routes through a secret controller the Community
+        # edition does not ship ("Session secret controller not found").
+        "sharedCredentials": False,
         "credentials": {"userName": CONN_USER, "userPassword": CONN_PASSWORD},
     }
     result = gql(
