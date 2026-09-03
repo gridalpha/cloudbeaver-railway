@@ -10,6 +10,7 @@ Every failure is logged and swallowed: a deployment must never fail over a
 convenience connection.
 """
 
+import hashlib
 import http.cookiejar
 import json
 import os
@@ -35,6 +36,12 @@ CONN_DATABASE = os.environ.get("CB_SEED_CONNECTION_DATABASE", "railway")
 CONN_USER = os.environ.get("CB_SEED_CONNECTION_USER", "")
 CONN_PASSWORD = os.environ.get("CB_SEED_CONNECTION_PASSWORD", "")
 CONN_DRIVER = os.environ.get("CB_SEED_CONNECTION_DRIVER", "postgres-jdbc")
+
+
+def client_password(plaintext):
+    """CloudBeaver's browser client sends MD5(password) in uppercase hex, and the
+    server hashes that again before comparing — so the plaintext never matches."""
+    return hashlib.md5(plaintext.encode("utf-8")).hexdigest().upper()
 
 
 def log(message):
@@ -111,7 +118,7 @@ def seed():
     gql("mutation { openSession { createTime } }")
     gql(
         "query login($u: Object) { authLogin(provider: \"local\", credentials: $u) { authId } }",
-        {"u": {"user": ADMIN_USER, "password": ADMIN_PASSWORD}},
+        {"u": {"user": ADMIN_USER, "password": client_password(ADMIN_PASSWORD)}},
     )
     project_id = pick_project()
     driver_id = pick_driver()
