@@ -41,6 +41,14 @@ def log(message):
     print("[railway-seed] %s" % message, flush=True)
 
 
+# CloudBeaver derives the request origin from X-Forwarded-Proto/Host and, with
+# forceHttps on, redirects anything it reads as plain HTTP — including a loopback
+# call. Present ourselves the way Railway's edge presents a browser.
+FORWARDED = {
+    "X-Forwarded-Proto": "https",
+    "X-Forwarded-Host": "127.0.0.1:%s" % PORT,
+}
+
 opener = urllib.request.build_opener(
     urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
 )
@@ -51,7 +59,10 @@ def gql(query, variables=None):
     request = urllib.request.Request(
         GQL,
         data=body,
-        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        headers=dict(FORWARDED, **{
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }),
     )
     with opener.open(request, timeout=60) as response:
         payload = json.loads(response.read().decode("utf-8"))
@@ -64,8 +75,9 @@ def wait_for_server(deadline_seconds=600):
     deadline = time.monotonic() + deadline_seconds
     while time.monotonic() < deadline:
         try:
-            with urllib.request.urlopen(STATUS, timeout=10) as response:
-                if response.status == 200:
+            request = urllib.request.Request(STATUS, headers=FORWARDED)
+            with opener.open(request, timeout=10) as response:
+                if response.status == 200 and b'"health"' in response.read():
                     return True
         except Exception:
             pass
